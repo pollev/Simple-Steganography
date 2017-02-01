@@ -5,7 +5,7 @@ This script uses the n(can be specified) least significant bits in the color val
 This allows you to hide files inside images without having a noticable visual impact on the image.
 Depending on the amount of bits used per pixel the image will be more/less distorted. 
 
-The ratio ImageSize/SecretFileSize determines the minimum amount of bits per pixel that have to be used to encode the secret file inside the image.
+The ratio ceiling(8/(ImageSize/SecretFileSize)) determines the minimum amount of bits per pixel that have to be used to encode the secret file inside the image.
 Obviously a secret file larger than the image file can never be encoded. If they are of equal size all pixels will be completely replaced by data of the secret file so it will be irrecognizable.
 
 
