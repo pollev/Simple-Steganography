@@ -1,4 +1,4 @@
-# Simple-Steganography
+# Simple Steganography
 A simple python script for embedding files of any type in bmp images. This is only a quick script. So it might contain bugs for unexpected input.
 This script uses the n(can be specified) least significant bits in the color values of each pixel to encode the bits belonging to another file.
 
