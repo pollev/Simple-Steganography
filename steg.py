@@ -4,6 +4,7 @@ import struct
 import os
 import sys
 import getopt
+import math
 from sty import fg, bg
 
 tmpFilePath = "tmpSecret.txt"
@@ -177,19 +178,16 @@ def decode():
         # Find offset
         offset = get_pixel_array_offset()
         pic.seek(offset)
+        current_encoded_byte_offset = 0
 
         # Read file length
         index = 0
         fileLengthBytes = bytearray()
         while index < 4:
             unmasked = 0
-            bytes_containing_one_encoded_byte = pic.read((8 // bitlength))
-            i = 0
-            for c in bytes_containing_one_encoded_byte:
-                c = chr(c)
-                for j in range(0, bitlength, 1):
-                    unmasked = write_bit(unmasked, i, read_bit(c, j))
-                    i = i + 1
+            for i in range(0, 8):
+                (decoded_bit, current_encoded_byte_offset) = read_next_bit(pic, current_encoded_byte_offset)
+                unmasked = write_bit(unmasked, i, decoded_bit)
             fileLengthBytes.append(unmasked)
             index = index + 1
 
@@ -200,15 +198,12 @@ def decode():
         index = 0
         while index < fileLength:
             unmasked = 0
-            byte = pic.read((8 // bitlength))
-            i = 0
-            for c in byte:
-                c = chr(c)
-                for j in range(0, bitlength, 1):
-                    unmasked = write_bit(unmasked, i, read_bit(c, j))
-                    i = i + 1
+            for i in range(0, 8):
+                (decoded_bit, current_encoded_byte_offset) = read_next_bit(pic, current_encoded_byte_offset)
+                unmasked = write_bit(unmasked, i, decoded_bit)
             out.write(unmasked.to_bytes(1, byteorder="little"))
             index = index + 1
+
     finally:
         pic.close()
         out.close()
@@ -216,6 +211,21 @@ def decode():
         print_info("DECODED MESSAGE")
         print_info("")
     return
+
+
+def read_next_bit(pic, current_encoded_byte_offset):
+    encoded_byte = pic.read(1)
+    decoded_bit = read_bit(encoded_byte, current_encoded_byte_offset)
+
+    current_encoded_byte_offset = current_encoded_byte_offset + 1
+    if current_encoded_byte_offset % bitlength == 0:
+        current_encoded_byte_offset = 0;
+    else:
+        # There are still bits left in the current byte
+        pic.seek(-1,1)
+
+    return (decoded_bit, current_encoded_byte_offset)
+
 
 
 ######
