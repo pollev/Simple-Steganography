@@ -41,6 +41,8 @@ def update_settings_and_print():
 
     if mode == "encode":
         secretSize = int(os.stat(secretName).st_size)
+        if secretSize + 4 > picSize: # secret is appended with 4 bytes containing the secret length
+            print_Error("There is insufficient room in the image file to store the secret")
         if(bitlength == -1):
             ratio = picSize // secretSize
             bitlength = 8 // ratio
@@ -112,7 +114,6 @@ def patch_image():
                 masked = c
                 for i in range(0, bitlength, 1):
                     masked = write_bit(masked, i, read_bit(char, charOffset * bitlength + i))
-                print("before: {} after: {}".format(c, masked))
                 out.write(masked.to_bytes(1, byteorder="little"))
                 bitindex = bitindex + bitlength
                 charOffset = charOffset + 1
