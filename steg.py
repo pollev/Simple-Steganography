@@ -46,8 +46,8 @@ def update_settings_and_print():
             print_Error("There is insufficient room in the image file to store the secret")
             sys.exit()
         if(bitlength == -1):
-            ratio = picSize // secretSize
-            bitlength = 8 // ratio
+            ratio = picSize / secretSize
+            bitlength = math.ceil(8 / ratio)
             if bitlength == 0:
                 bitlength = 1
             print_info("")
@@ -145,6 +145,7 @@ def encode_next_byte(pic, secret, current_secret_bit_offset):
             byte_to_encode = secret.read(1)
             if len(byte_to_encode) == 0:
                 end_of_secret = True
+                break
 
     if not end_of_secret:
         secret.seek(-1,1)
@@ -321,8 +322,8 @@ def parse_args(argv):
             outName = arg
         elif opt in ("-b", "--bfile"):
             bitlength = int(arg)
-            if bitlength not in (1, 2, 4, 8):
-                print_info("bit length must be 1, 2, 4 or 8")
+            if bitlength not in (1, 2, 3, 4, 5, 6, 7, 8):
+                print_info("bit length must be 1, 2, 3, 4  5, 6, 7 or 8")
                 sys.exit()
     if "encode" in args:
         mode = "encode"
