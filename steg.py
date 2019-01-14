@@ -44,6 +44,7 @@ def update_settings_and_print():
         secretSize = int(os.stat(secretName).st_size)
         if secretSize + 4 > picSize: # secret is appended with 4 bytes containing the secret length
             print_Error("There is insufficient room in the image file to store the secret")
+            sys.exit()
         if(bitlength == -1):
             ratio = picSize // secretSize
             bitlength = 8 // ratio
@@ -150,8 +151,8 @@ def append_leftover_pic(rgb):
 
 def check_size_requirements(picLength, secretLength, picOffset):
     if(picLength - picOffset < secretLength * (8 / bitlength)):
-        print_info("ERROR: picture too small to contain secret")
-        print_info("ERROR: aborting")
+        print_error("picture too small to contain secret")
+        print_error("aborting")
         sys.exit()
     return
 
@@ -194,12 +195,21 @@ def decode():
         fileLength = struct.unpack(">I", fileLengthBytes)[0]
         print_info("secret length: {}".format(fileLength))
 
+        if fileLength * (8 / bitlength) > picSize:
+            print_error("a secret size of {} is impossible in a file of size {} with a bit length of {}".format(fileLength, picSize, bitlength))
+            sys.exit()
+
         # Get message from image
         index = 0
         while index < fileLength:
             unmasked = 0
             for i in range(0, 8):
                 (decoded_bit, current_encoded_byte_offset) = read_next_bit(pic, current_encoded_byte_offset)
+                if (decoded_bit == -1 and current_encoded_byte_offset == -1):
+                    print_error("End of image file reached!")
+                    print_error("Please make sure you are decoding an image with the correct bit length setting!")
+                    print_error("Your current bitlength setting is {}".format(bitlength))
+                    sys.exit()
                 unmasked = write_bit(unmasked, i, decoded_bit)
             out.write(unmasked.to_bytes(1, byteorder="little"))
             index = index + 1
@@ -215,6 +225,8 @@ def decode():
 
 def read_next_bit(pic, current_encoded_byte_offset):
     encoded_byte = pic.read(1)
+    if len(encoded_byte) == 0:
+        return (-1, -1)
     decoded_bit = read_bit(encoded_byte, current_encoded_byte_offset)
 
     current_encoded_byte_offset = current_encoded_byte_offset + 1
