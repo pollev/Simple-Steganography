@@ -51,7 +51,7 @@ def update_settings_and_print():
             if bitlength == 0:
                 bitlength = 1
             print_info("")
-            print_info("Detected picture / secret ratio of {}. Using bit size of {}".format(ratio, bitlength))
+            print_info("Detected picture / secret ratio of {:.2f}. Using bit size of {}".format(ratio, bitlength))
             print_info("")
 
     print_info("Picture file is {}".format(picName))
