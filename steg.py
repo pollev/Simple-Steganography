@@ -24,8 +24,8 @@ outName = ""
 
 
 def main(argv):
-    parse_args(argv)
     print_banner()
+    parse_args(argv)
     update_settings_and_print()
 
     if mode == "encode":
