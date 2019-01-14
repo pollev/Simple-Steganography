@@ -105,31 +105,16 @@ def patch_image():
         out.write(header)
         # Jump to pixel array
         pic.seek(offset)
-        # Iterate over pixel array and secret file
-        rgb = pic.read(8 // bitlength)
-        char = secret.read(1)
-        bitindex = 0
-        while len(rgb) == (8 // bitlength) and len(char) == 1:
-            # printByte = "".join(["\\x%02X" % ord(c) for c in rgb])
-            charOffset = 0
-            for c in rgb:
-                masked = c
-                for i in range(0, bitlength, 1):
-                    masked = write_bit(masked, i, read_bit(char, charOffset * bitlength + i))
-                out.write(masked.to_bytes(1, byteorder="little"))
-                bitindex = bitindex + bitlength
-                charOffset = charOffset + 1
-            rgb = pic.read(8 // bitlength)
-            char = secret.read(1)
-        # display status
-        if len(rgb) != (8 // bitlength):
-            print_info("ran out of image")
-            sys.exit()
-        else:
-            print_info("success adding secret to image")
+
+        # encode each byte of the picture file untill we run out of secret file
+        current_secret_bit_offset = 0
+        (masked, current_secret_bit_offset) = encode_next_byte(pic, secret, current_secret_bit_offset)
+        while current_secret_bit_offset != -1:
+            out.write(masked.to_bytes(1, byteorder="little"))
+            (masked, current_secret_bit_offset) = encode_next_byte(pic, secret, current_secret_bit_offset)
 
         # append rest of image file
-        append_leftover_pic(rgb)
+        append_leftover_pic()
     finally:
         pic.close()
         secret.close()
@@ -139,10 +124,38 @@ def patch_image():
     return
 
 
-def append_leftover_pic(rgb):
+def encode_next_byte(pic, secret, current_secret_bit_offset):
+    byte_to_encode = secret.read(1)
+    #print("secret: {}".format(byte_to_encode))
+
+    if len(byte_to_encode) == 0:
+        return (-1, -1)
+
+    end_of_secret = False
+
+    byte_to_encode_into = int.from_bytes(pic.read(1), byteorder="little")
+
+    for i in range(0, bitlength, 1):
+        secret_bit = read_bit(byte_to_encode, current_secret_bit_offset)
+        byte_to_encode_into = write_bit(byte_to_encode_into, i, secret_bit)
+
+        current_secret_bit_offset = current_secret_bit_offset + 1
+        if current_secret_bit_offset % 8 == 0:
+            current_secret_bit_offset = 0
+            byte_to_encode = secret.read(1)
+            if len(byte_to_encode) == 0:
+                end_of_secret = True
+
+    if not end_of_secret:
+        secret.seek(-1,1)
+    #print("out: {}".format(byte_to_encode_into.to_bytes(1, byteorder="little")))
+
+    return (byte_to_encode_into, current_secret_bit_offset)
+
+
+def append_leftover_pic():
     print_info("appending leftover image")
     # Append rest of file
-    out.write(rgb)
     rgb = pic.read(1)
     while len(rgb) != 0:
         out.write(rgb)
